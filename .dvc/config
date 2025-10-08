@@ -1,0 +1,5 @@
+[core]
+    remote = s3remote
+['remote "s3remote"']
+    url = s3://bike-sharing-mna-mlops-2025/dvcstore/
+    region = us-east-2

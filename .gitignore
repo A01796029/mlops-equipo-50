@@ -1,5 +1,7 @@
 # Data
-/data/
+/data/**/*.csv
+#!/data/raw/bike_sharing_modified.csv.dvc
+!/data/**/*.dvc
 
 # Mac OS-specific storage files
 .DS_Store
