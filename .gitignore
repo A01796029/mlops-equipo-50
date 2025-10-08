@@ -1,5 +1,5 @@
 # Data
-/data/*
+/data/**/*.csv
 !/data/**/*.dvc
 
 # Mac OS-specific storage files
