@@ -1,0 +1,5 @@
+outs:
+- md5: 85e90cd4230813e44b9dca4d2675eabd
+  size: 1015094
+  hash: md5
+  path: bike_sharing_cleaned.csv
