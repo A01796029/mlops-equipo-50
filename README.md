@@ -11,6 +11,8 @@
     <img src="https://img.shields.io/badge/CCDS-Project%20template-328F97?logo=cookiecutter" />
 </a>
 
+Fase 1 del Proyecto Bike Sharing: https://docs.google.com/presentation/d/1LZJk0EhUpKuh7kQsRSAzbQCTJ0b0cwNmPyQ3AUO4_EY/edit?usp=sharing
+
 A short description of the project.
 
 ## Project Organization
