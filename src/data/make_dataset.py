@@ -13,7 +13,7 @@ from src.utils import save_dataframe_to_csv
 # CONSTANTES DE CONFIGURACIÓN
 # =============================================================================
 ROOT_DIR = Path(__file__).resolve().parents[2]
-RAW_DATA_PATH: Path = ROOT_DIR / "data" / "raw" / "hour.csv"
+RAW_DATA_PATH: Path = ROOT_DIR / "data" / "raw" / "bike_sharing_modified.csv"
 CLEANED_DATA_PATH: Path = ROOT_DIR / "data" / "interim" / "bike_sharing_cleaned.csv"
 
 FINAL_COLUMNS: List[str] = [

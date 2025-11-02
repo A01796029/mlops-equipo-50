@@ -11,14 +11,14 @@ class DataCleaningPipeline:
     Clase para encapsular y ejecutar el pipeline completo de limpieza
     de datos de 'bike sharing' utilizando Programación Orientada a Objetos (POO).
     """
-    # Constantes definidas en base a la lógica del notebook original
+    # Constantes para las columnas válidas del dataset
     _VALID_COLUMNS: List[str] = [
         'dteday', 'season', 'yr', 'mnth', 'hr', 'holiday', 'weekday', 
         'workingday', 'weathersit', 'temp', 'atemp', 'hum', 'windspeed', 
         'casual', 'registered', 'cnt'
     ]
     
-    # Reglas de validación para manejo de inválidos
+    # Constantes de reglas para checar valores inválidos
     _VALIDATION_RULES: Dict[str, List | Tuple] = {
         'dteday': (pd.to_datetime('2011-01-01'), pd.to_datetime('2012-12-31')),
         'season': [1, 2, 3, 4],
@@ -48,7 +48,7 @@ class DataCleaningPipeline:
     @staticmethod
     def _date_to_season(date_obj: pd.Timestamp) -> int:
         """
-        [Método Estático de Ayuda] Convierte una fecha a la estación del año.
+        Método auxiliar. Convierte una fecha a la estación del año.
         1:invierno, 2:primavera, 3:verano, 4:otoño.
         """
         if pd.isna(date_obj):
@@ -175,7 +175,6 @@ class DataCleaningPipeline:
             print(f"    - Se eliminaron {rows_deleted} filas con datos críticos faltantes.")
 
         # Estrategia 2: Imputación Contextual (Derivación por fecha)
-        # Se asume que las columnas son numéricas (flotantes) en este punto
         mask_yr = self.df['yr'].isna()
         if 'yr' in self.df.columns:
             self.df.loc[mask_yr, 'yr'] = self.df.loc[mask_yr, 'dteday'].dt.year - 2011
@@ -207,7 +206,7 @@ class DataCleaningPipeline:
 
         print("\n  -> Verificando y corrigiendo inconsistencias lógicas...")
 
-        # Regla 1: Consistencia de variables de tiempo vs. 'dteday' (Corrección)
+        # Regla 1: Consistencia de variables de tiempo vs. 'dteday'
         self.df['yr'] = self.df['dteday'].dt.year - 2011
         self.df['mnth'] = self.df['dteday'].dt.month
         self.df['weekday'] = (self.df['dteday'].dt.weekday + 1) % 7
@@ -215,13 +214,13 @@ class DataCleaningPipeline:
 
         print("    - Consistencia de fecha (yr, mnth, season, weekday) corregida.")
 
-        # Regla 2: Consistencia de 'workingday' (Corrección)
+        # Regla 2: Consistencia de 'workingday'
         # 1 si es día laboral (no fin de semana AND no feriado), 0 en caso contrario
         correct_workingday = ((self.df['weekday'].isin([0, 6])) | (self.df['holiday'] == 1)).apply(lambda x: 0 if x else 1)
         self.df['workingday'] = correct_workingday
         print("    - Consistencia de 'workingday' corregida.")
 
-        # Regla 3: Consistencia de conteo (Eliminación)
+        # Regla 3: Consistencia de conteo
         # Identifica las filas donde cnt != casual + registered
         inconsistent_sum_mask = self.df['cnt'] != (self.df['casual'] + self.df['registered'])
         rows_to_drop = inconsistent_sum_mask.sum()
@@ -268,9 +267,6 @@ class DataCleaningPipeline:
         # Conversión a entero (deben estar libres de NaN para esto)
         for col in count_cols:
             if col in self.df.columns:
-                # Se usa 'Int64' para manejar nulos como NaN y aún tener tipo entero
-                # Si se eliminaron todos los nulos antes, 'int' normal es suficiente.
-                # Asumiendo que handle_missing_values limpió los nulos en estas columnas.
                 self.df[col] = self.df[col].astype(int)
 
         self.df = self.df.reset_index(drop=True)
@@ -309,23 +305,3 @@ class DataCleaningPipeline:
         self.diagnostico_inicial(df_name="DATOS LIMPIOS Y PROCESADOS")
         
         return self.df
-
-# =============================================================================
-# Ejemplo de Uso del Módulo (Simulando make_dataset.py)
-# =============================================================================
-if __name__ == '__main__':
-    # Aquí usarías rutas relativas dentro de tu estructura Cookiecutter
-    # Ejemplo: RAW_DATA_PATH = '../../data/raw/bike_sharing_raw.csv'
-    RAW_DATA_PATH = 'hour.csv' # RUTA EJEMPLO: REEMPLAZA CON TU RUTA
-    
-    # 1. Crea una instancia de la clase
-    pipeline = DataCleaningPipeline(raw_data_path=RAW_DATA_PATH)
-    
-    # 2. Ejecuta el pipeline completo
-    cleaned_df = pipeline.ejecutar_pipeline()
-    
-    if cleaned_df is not None:
-        print("\nPipeline completado exitosamente. DataFrame listo para modelado.")
-        
-        # Guardado del resultado (simulación, la ruta sería en la carpeta 'interim')
-        # cleaned_df.to_csv('../../data/interim/bike_sharing_cleaned.csv', index=False)
