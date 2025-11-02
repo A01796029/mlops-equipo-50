@@ -1,3 +1,8 @@
+"""
+Configuración de rutas y variables del proyecto.
+
+Se usa por los módulos CLI y scripts para localizar data, modelos y reportes.
+"""
 from pathlib import Path
 
 from dotenv import load_dotenv

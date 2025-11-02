@@ -48,7 +48,7 @@ A short description of the project.
 │
 ├── setup.cfg          <- Configuration file for flake8
 │
-└── mlops_equipo_50   <- Source code for use in this project.
+└── src   <- Source code for use in this project.
     │
     ├── __init__.py             <- Makes mlops_equipo_50 a Python module
     │
@@ -59,9 +59,9 @@ A short description of the project.
     ├── features.py             <- Code to create features for modeling
     │
     ├── modeling                
-    │   ├── __init__.py 
-    │   ├── predict.py          <- Code to run model inference with trained models          
-    │   └── train.py            <- Code to train models
+    │   ├── main.py                    <- Este es el script de ejecución que junta el procesador de datos y el orquestador de experimentos
+    │   ├── data_processor.py          <- Este archivo contendrá la clase DataProcessor que maneja la carga, el encoding y la división de los datos, siguiendo los pasos de tu notebook original.         
+    │   └── ml_experiment.py           <- Esta clase contendrá la lógica principal de MLOps: registro de experimentos (MLflow), visualización (artefactos) y entrenamiento (incluyendo Grid Search).
     │
     └── plots.py                <- Code to create visualizations
 ```
