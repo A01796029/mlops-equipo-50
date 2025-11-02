@@ -14,6 +14,7 @@ class DataProcessor:
         self.test_size = test_size
         self.val_size = val_size
         self.random_state = random_state
+        self.use_pipeline = True  # Indica si se usará el pipeline de preprocesamiento
 
     def _one_hot_encoder(self, data: pd.DataFrame, column: str) -> pd.DataFrame:
         """Aplica One-Hot Encoding a una columna."""
@@ -34,12 +35,14 @@ class DataProcessor:
         X = df.drop(columns=[self.target_col, "casual", "registered", "dteday"], errors='ignore')
         
         # 3. Aplicar One-Hot Encoding
-        cat_cols_to_encode = X.select_dtypes(include=["category"]).columns.tolist()
-        for col in cat_cols_to_encode:
-            X = self._one_hot_encoder(X, col)
-
-        # Retornar el DataFrame de características preparado
-        return X
+        if self.use_pipeline:
+            # No OHE aquí: el ColumnTransformer del pipeline lo hará
+            return X
+        else:
+            # OHE manual (comportamiento previo definido por Edmundo en el notebook)
+            for col in X.select_dtypes(include=["category"]).columns:
+                X = self._one_hot_encoder(X, col)
+            return X
 
     def load_and_split(self):
         """Carga los datos y los divide en Train, Validation y Test sets."""

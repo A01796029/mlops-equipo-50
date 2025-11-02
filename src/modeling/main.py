@@ -3,6 +3,7 @@
 import mlflow
 import warnings
 from src.modeling.data_processor import DataProcessor
+from src.modeling.pipeline import build_pipeline
 from src.modeling.ml_experiment import MLExperiment, MODEL_MAP, PARAM_GRIDS
 
 # --- Configuración General ---
@@ -44,20 +45,28 @@ def main():
     for model_name in top_models:
         if model_name in MODEL_MAP:
             print(f"\nProcesando modelo: {model_name}")
-            
-            # Si LazyPredict devuelve otro modelo, solo lo optimizaremos si tenemos un grid definido.
+
             if model_name in PARAM_GRIDS:
+                base_model = MODEL_MAP[model_name]
+                # 3.1 Envolver el modelo en el pipeline de preprocesamiento
+                wrapped_model = build_pipeline(base_model, X_trainval)
+
+                # 3.2 Prefijar los hiperparámetros con 'model__' para el paso del modelo
+                original_grid = PARAM_GRIDS[model_name]
+                param_grid_prefixed = {f"model__{k}": v for k, v in original_grid.items()}
+
+                # 3.3 Ejecutar GridSearch con el pipeline
                 ml_exp.run_grid_search(
-                    model_name, 
-                    MODEL_MAP[model_name], 
-                    PARAM_GRIDS[model_name], 
-                    X_trainval, 
-                    y_trainval, 
-                    X_test, 
+                    model_name,
+                    wrapped_model,
+                    param_grid_prefixed,
+                    X_trainval,
+                    y_trainval,
+                    X_test,
                     y_test
                 )
             else:
-                 print(f"Skipping optimization for {model_name}: No PARAM_GRIDS defined.")
+                print(f"Skipping optimization for {model_name}: No PARAM_GRIDS defined.")
 
     print("\n--- Pipeline de MLOps Completado ---")
     print("Ejecuta 'mlflow ui' para visualizar y comparar los resultados de todos los experimentos.")
