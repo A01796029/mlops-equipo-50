@@ -16,7 +16,6 @@ lazypredict==0.2.12
 
 # Data versioning and project structure
 dvc==3.50.2
-cookiecutter-data-science==0.0.5
 
 # API & CLI
 fastapi==0.115.0
