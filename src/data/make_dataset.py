@@ -82,5 +82,13 @@ def main() -> None:
     logger.info("-" * 63)
 
 
+def load_dataset() -> Optional[pd.DataFrame]:
+    """
+    Carga el dataset crudo, ejecuta la limpieza y devuelve el DataFrame limpio.
+    Se mantiene por compatibilidad con pruebas de integración.
+    """
+    return run_cleaning_pipeline(raw_data_path=RAW_DATA_PATH, expected_columns=FINAL_COLUMNS)
+
+
 if __name__ == "__main__":
     main()
