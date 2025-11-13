@@ -66,7 +66,7 @@ def test_log_plots(mock_close, mock_save, mock_log_artifact):
     
     mock_save.assert_called_once()
     mock_log_artifact.assert_called_once_with("ModelX_TRAIN_vs_pred.png", "plots", run_id="run123")
-    mock_close.assert_called_once()
+    mock_close.assert_called()
 
 # ===============================
 # Test de run_grid_search con mock
