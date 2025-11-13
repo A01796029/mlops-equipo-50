@@ -1,0 +1,14 @@
+artifact_uri: file:///C:/Users/Arturo%20Gonzalez/Desktop/mlops-equipo-50/mlruns/772742546791819088/cd10b827b47d4f22a7ce995a65e84886/artifacts
+end_time: 1763010244575
+entry_point_name: ''
+experiment_id: '772742546791819088'
+lifecycle_stage: active
+run_id: cd10b827b47d4f22a7ce995a65e84886
+run_name: agreeable-crow-476
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1763010243838
+status: 3
+tags: []
+user_id: Arturo Gonzalez

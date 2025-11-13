@@ -1,0 +1,14 @@
+artifact_uri: file:///C:/Users/Arturo%20Gonzalez/Desktop/mlops-equipo-50/mlruns/772742546791819088/e1322e4ae6df4a289d724a0b55139d54/artifacts
+end_time: 1763009989771
+entry_point_name: ''
+experiment_id: '772742546791819088'
+lifecycle_stage: active
+run_id: e1322e4ae6df4a289d724a0b55139d54
+run_name: wise-penguin-911
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1763009989026
+status: 3
+tags: []
+user_id: Arturo Gonzalez

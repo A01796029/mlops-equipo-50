@@ -1,21 +1,36 @@
+# Core scientific stack
 numpy
 pandas
 scipy
 matplotlib
 seaborn
 scikit-learn
-dvc
-cookiecutter-data-science
-pytest
-fastapi
+
+# ML & experiment tracking
 mlflow
 evidently
 sdv
 deepchecks
-loguru
-pip
-python-dotenv
-ruff
-tqdm
+
+# Data versioning and project structure
+dvc
+cookiecutter-data-science
+
+# API & CLI
+fastapi
 typer
+
+# Logging and utilities
+loguru
+tqdm
+python-dotenv
+
+# Testing
+pytest
+pytest-cov
+
+# Linting / formatting
+ruff
+
+# Internal package install
 -e .

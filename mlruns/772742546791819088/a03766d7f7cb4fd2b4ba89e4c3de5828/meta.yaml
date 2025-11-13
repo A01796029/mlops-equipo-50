@@ -1,0 +1,14 @@
+artifact_uri: file:///C:/Users/Arturo%20Gonzalez/Desktop/mlops-equipo-50/mlruns/772742546791819088/a03766d7f7cb4fd2b4ba89e4c3de5828/artifacts
+end_time: 1763010225107
+entry_point_name: ''
+experiment_id: '772742546791819088'
+lifecycle_stage: active
+run_id: a03766d7f7cb4fd2b4ba89e4c3de5828
+run_name: thundering-koi-876
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1763010224332
+status: 3
+tags: []
+user_id: Arturo Gonzalez

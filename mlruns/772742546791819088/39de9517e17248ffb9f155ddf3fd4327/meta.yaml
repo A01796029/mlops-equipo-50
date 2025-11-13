@@ -1,0 +1,14 @@
+artifact_uri: file:///C:/Users/Arturo%20Gonzalez/Desktop/mlops-equipo-50/mlruns/772742546791819088/39de9517e17248ffb9f155ddf3fd4327/artifacts
+end_time: 1763009793263
+entry_point_name: ''
+experiment_id: '772742546791819088'
+lifecycle_stage: active
+run_id: 39de9517e17248ffb9f155ddf3fd4327
+run_name: mysterious-wren-561
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1763009791614
+status: 3
+tags: []
+user_id: Arturo Gonzalez
