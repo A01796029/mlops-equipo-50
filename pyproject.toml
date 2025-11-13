@@ -30,3 +30,9 @@ extend-select = ["I"]  # Add import sorting
 known-first-party = ["mlops_equipo_50"]
 force-sort-within-sections = true
 
+[tool.flit.module]
+name = "mlops_equipo_50"
+directory = "src"
+
+src = ["src"]
+include = ["pyproject.toml", "src/**/*.py"]

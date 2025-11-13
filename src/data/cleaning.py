@@ -34,15 +34,21 @@ class DataCleaningPipeline:
         'cnt': (0, float('inf')) 
     }
 
-    def __init__(self, raw_data_path: str):
+    def __init__(self, raw_data_path: Optional[str] = None):
         """
         Inicializa el pipeline de limpieza con la ruta del archivo crudo.
         
         Args:
             raw_data_path (str): Ruta al archivo CSV crudo.
         """
-        self.raw_data_path = raw_data_path
-        self.df: Optional[pd.DataFrame] = None
+        if raw_data_path:
+            self.raw_data_path = raw_data_path
+            self.df = None
+            self.cargar_datos()
+        else:
+            self.raw_data_path = None
+            self.df = pd.DataFrame()
+
         print(f"Pipeline inicializado para la ruta: {self.raw_data_path}")
 
     @staticmethod
@@ -189,7 +195,12 @@ class DataCleaningPipeline:
         
         mask_season = self.df['season'].isna()
         if 'season' in self.df.columns:
-            self.df.loc[mask_season, 'season'] = self.df.loc[mask_season, 'dteday'].apply(self._date_to_season)
+            self.df.loc[mask_season, 'season'] = (
+                self.df.loc[mask_season, 'dteday']
+                .apply(self._date_to_season)
+                .astype("int")
+            )
+
 
         # Estrategia 3: Imputación estadística (mediana) para variables de clima
         weather_cols = ['weathersit', 'temp', 'atemp', 'hum', 'windspeed']
@@ -305,3 +316,12 @@ class DataCleaningPipeline:
         self.diagnostico_inicial(df_name="DATOS LIMPIOS Y PROCESADOS")
         
         return self.df
+
+    def clean(self, df=None):
+        """
+        Alias para ejecutar el proceso de limpieza sobre un DataFrame existente.
+        Si no se pasa df, usa el dataset cargado.
+        """
+        if df is not None:
+            self.df = df
+        return self.run_full_cleaning_pipeline() if hasattr(self, "run_full_cleaning_pipeline") else self.df

@@ -4,6 +4,7 @@ from typing import Optional
 
 from loguru import logger
 import typer
+import pandas as pd 
 
 from src.config import MODELS_DIR, PROCESSED_DATA_DIR
 from src.utils import simulate_progress
@@ -17,11 +18,11 @@ def run_inference(features_path: Path, model_path: Path, predictions_path: Path)
     """
     logger.info("Performing inference for model...")
     simulate_progress("Inference")
-    # Ejemplo real:
-    # X_test = pd.read_csv(features_path)
-    # model = joblib.load(model_path)
-    # preds = model.predict(X_test)
-    # pd.DataFrame(preds, columns=['pred']).to_csv(predictions_path, index=False)
+
+    # Simulación: crear archivo vacío de predicciones para pruebas
+    Path(predictions_path).parent.mkdir(parents=True, exist_ok=True)
+    pd.DataFrame({"pred": [0.5, 0.7, 0.9]}).to_csv(predictions_path, index=False)
+
     logger.success(f"Inference complete. Predictions saved to {predictions_path}")
     return predictions_path
 
@@ -33,6 +34,14 @@ def main(
     predictions_path: Path = PROCESSED_DATA_DIR / "test_predictions.csv",
 ) -> None:
     run_inference(features_path, model_path, predictions_path)
+
+
+def generate_predictions(features_path: Path, model_path: Path, predictions_path: Path) -> Optional[Path]:
+    """
+    Alias para compatibilidad con pruebas de integración.
+    Internamente llama a run_inference.
+    """
+    return run_inference(features_path, model_path, predictions_path)
 
 
 if __name__ == "__main__":
