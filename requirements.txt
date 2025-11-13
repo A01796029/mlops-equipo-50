@@ -1,34 +1,24 @@
-# Core scientific stack
 numpy==1.26.4
 pandas==2.1.4
 scipy==1.14.1
 matplotlib==3.9.2
 seaborn==0.13.2
-scikit-learn==1.5.2
+scikit-learn==1.3.2  # compatible con deepchecks y evidently
 joblib==1.4.2
 
-# ML & experiment tracking
 mlflow==2.17.0
 evidently==0.4.37
 sdv==1.17.3
 deepchecks==0.18.1
 lazypredict==0.2.12
 
-# Data versioning
 dvc==3.50.2
-
-# API & CLI
 fastapi==0.115.0
 typer==0.12.5
-
-# Logging and utilities
 loguru==0.7.2
 tqdm==4.67.0
 python-dotenv==1.0.1
 
-# Testing
 pytest==8.3.3
 pytest-cov==6.0.0
-
-# Linting / formatting
 ruff==0.6.8
