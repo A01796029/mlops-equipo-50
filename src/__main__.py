@@ -10,7 +10,8 @@ from src import config
 from src.data import make_dataset as data_mod
 from src import features
 from src import plots
-from src.modeling import train as train_mod
+# from src.modeling import train as train_mod
+from src.modeling import main as train_mod
 from src.modeling import predict as predict_mod
 
 app = typer.Typer()
