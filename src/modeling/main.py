@@ -1,20 +1,34 @@
-# src/main.py
+# src/modeling/main.py
 
 import mlflow
 import warnings
+import typer
+from pathlib import Path
+
 from src.modeling.data_processor import DataProcessor
 from src.modeling.pipeline import build_pipeline
 from src.modeling.ml_experiment import MLExperiment, MODEL_MAP, PARAM_GRIDS
+from src.config import INTERIM_DATA_DIR
 
 # --- Configuración General ---
-DATA_PATH = './data/interim/bike_sharing_cleaned.csv'
+DEFAULT_DATA_PATH = INTERIM_DATA_DIR / "bike_sharing_cleaned.csv"
 EXPERIMENT_NAME = "Bike_Sharing_MLOps_Project"
 RANDOM_STATE = 42
 
 # Suprimir las advertencias para una salida más limpia
 warnings.filterwarnings("ignore")
 
-def main():
+# Crear la App de Typer
+app = typer.Typer()
+
+@app.command()
+def main(
+    input_path: Path = typer.Option(
+        DEFAULT_DATA_PATH, 
+        "--input-path", "-i",
+        help="Ruta al archivo CSV limpio (de 'interim')."
+    )
+):
     """
     Ejecuta el pipeline de Machine Learning, incluyendo:
     1. Carga y preprocesamiento de datos.
@@ -23,11 +37,8 @@ def main():
     """
     
     print("--- 1. Preparando Datos ---")
-    data_proc = DataProcessor(DATA_PATH, random_state=RANDOM_STATE)
+    data_proc = DataProcessor(str(input_path), random_state=RANDOM_STATE)
     
-    # X_trainval/y_trainval es el 80% (usado para entrenamiento en GS)
-    # X_test/y_test es el 20% (usado para la evaluación final)
-    # X_train/X_val/y_train/y_val es la división 72/8 (usada solo en LazyRegressor)
     try:
         X_trainval, X_test, y_trainval, y_test, X_train, X_val, y_train, y_val = data_proc.load_and_split()
     except Exception as e:
@@ -73,4 +84,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    app()
