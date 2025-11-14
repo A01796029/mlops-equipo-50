@@ -21,8 +21,9 @@ warnings.filterwarnings("ignore")
 # Crear la App de Typer
 app = typer.Typer()
 
-@app.command()
+@app.callback(invoke_without_command=True)
 def main(
+    ctx: typer.Context, # Argumento de contexto requerido para callback
     input_path: Path = typer.Option(
         DEFAULT_DATA_PATH, 
         "--input-path", "-i",

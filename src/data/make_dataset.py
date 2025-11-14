@@ -67,8 +67,9 @@ def run_cleaning_pipeline(raw_data_path: Path, expected_columns: List[str]) -> O
 # =============================================================================
 
 # --- Se convierte main() en un comando de Typer ---
-@app.command()
+@app.callback(invoke_without_command=True)
 def main(
+    ctx: typer.Context, # Argumento de contexto requerido para callback
     input_path: Path = typer.Option(
         DEFAULT_RAW_PATH, 
         "--input-path", "-i",
