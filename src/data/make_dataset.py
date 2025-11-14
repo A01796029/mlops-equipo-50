@@ -6,6 +6,7 @@ from typing import List, Optional
 import pandas as pd
 from loguru import logger
 
+from src.config import RAW_DATA_DIR, INTERIM_DATA_DIR
 from src.data.cleaning import DataCleaningPipeline
 from src.utils import save_dataframe_to_csv
 
@@ -13,8 +14,8 @@ from src.utils import save_dataframe_to_csv
 # CONSTANTES DE CONFIGURACIÓN
 # =============================================================================
 ROOT_DIR = Path(__file__).resolve().parents[2]
-RAW_DATA_PATH: Path = ROOT_DIR / "data" / "raw" / "bike_sharing_modified.csv"
-CLEANED_DATA_PATH: Path = ROOT_DIR / "data" / "interim" / "bike_sharing_cleaned.csv"
+RAW_DATA_PATH = RAW_DATA_DIR / "bike_sharing_modified.csv"
+CLEANED_DATA_PATH = INTERIM_DATA_DIR / "bike_sharing_cleaned.csv"
 
 FINAL_COLUMNS: List[str] = [
     'dteday', 'season', 'yr', 'mnth', 'hr', 'holiday', 'weekday',
