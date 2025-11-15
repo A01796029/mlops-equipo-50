@@ -52,9 +52,13 @@ def main(
     print("\n--- 2. Ejecutando LazyRegressor para Screeening Inicial ---")
     top_models = ml_exp.run_lazypredict(X_train, X_val, y_train, y_val, top_n=3)
 
-    # --- 3. Optimización de los 3 Mejores Modelos ---
+    # --- 3. Optimización de Modelos ---
     print("\n--- 3. Optimizando Modelos Seleccionados con GridSearchCV ---")
-    for model_name in top_models:
+
+    models_to_train = ['XGBRegressor', 'RandomForestRegressor'] 
+    print(f"Modelos a entrenar: {models_to_train}")
+
+    for model_name in models_to_train:
         if model_name in MODEL_MAP:
             print(f"\nProcesando modelo: {model_name}")
 
