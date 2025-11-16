@@ -68,3 +68,28 @@ A short description of the project.
 
 --------
 
+
+
+Fase 1 del Proyecto Bike Sharing:
+
+## Modelo Desplegado (API)
+
+El servicio de inferencia de FastAPI (ubicado en `src/api/main.py`) está diseñado para cargar un modelo directamente desde el **Registro de Modelos de MLflow**.
+
+Para garantizar la reproducibilidad, la API está **"fijada" (pinned)** a una versión de modelo específica.
+
+### URI del Artefacto
+
+La URI del modelo que la API está configurada para cargar es: 
+- models:/Bike_Sharing_MLOps_Project/1
+
+**Desglose de la URI:**
+* **`models:/`**: Es el prefijo de MLflow para un modelo registrado.
+* **`Bike_Sharing_MLOps_Project`**: Es el nombre del modelo registrado (el que creaste en la pestaña "Models").
+* **`1`**: Es el número de **Versión** específico que se está sirviendo.
+
+### Flujo de trabajo para Actualizaciones
+
+1.  El pipeline de entrenamiento se ejecuta (`python -m src train`) y se registra una nueva versión (ej. `Version 2`) en MLflow.
+2.  Para desplegar este nuevo modelo, el archivo `src/api/main.py` debe ser actualizado, cambiando la variable `MODEL_URI` para que apunte a la nueva versión (ej. `.../2`).
+3.  La API debe ser reiniciada (o la imagen de Docker reconstruida y redesplegada) para cargar el nuevo modelo.
