@@ -1,15 +1,24 @@
 # src/modeling/main.py
 
-import mlflow
+from pathlib import Path
+
 import warnings
 import typer
 from pathlib import Path
 from datetime import datetime
 
 from src.modeling.data_processor import DataProcessor
-from src.modeling.pipeline import build_pipeline
+from src.modeling.pipeline import build_pipeline, infer_feature_types
 from src.modeling.ml_experiment import MLExperiment, MODEL_MAP, PARAM_GRIDS
-from src.config import INTERIM_DATA_DIR, RANDOM_SEEDS
+from src.modeling.data_drift import (
+    detect_drift,
+    evaluate_performance_drift,
+    generate_monitoring_dataset,
+    drift_results_as_dataframe,
+    log_drift_summary,
+    persist_and_log_drift_outputs,
+)
+from src.config import INTERIM_DATA_DIR, REPORTS_DIR, RANDOM_SEEDS
 
 # --- Configuración General ---
 DEFAULT_DATA_PATH = INTERIM_DATA_DIR / "bike_sharing_cleaned.csv"
@@ -45,6 +54,42 @@ def main(
     except Exception as e:
         print(f"No se pudo cargar y dividir los datos. Terminando. Error: {e}")
         return
+
+    print("\n--- 1b. Analizando Data Drift entre Train/Validation y Test ---")
+    num_cols, cat_cols = infer_feature_types(X_trainval)
+    pre_drift_results = detect_drift(X_trainval, X_test, num_cols, cat_cols)
+    log_drift_summary(pre_drift_results)
+    pre_drift_df = drift_results_as_dataframe(pre_drift_results)
+
+    print("\n--- 1c. Simulando data drift y evaluando impacto en performance ---")
+    monitoring_features = generate_monitoring_dataset(X_val, random_state=117)
+    monitoring_target = y_val.copy()
+
+    print("\n--- 1d. Verificando drift entre Validación y lote simulado ---")
+    post_drift_results = detect_drift(X_val, monitoring_features, num_cols, cat_cols)
+    log_drift_summary(post_drift_results)
+    post_drift_df = drift_results_as_dataframe(post_drift_results)
+
+    baseline_model = build_pipeline(MODEL_MAP['RandomForestRegressor'], X_trainval)
+    baseline_model.fit(X_trainval, y_trainval)
+
+    performance_report = evaluate_performance_drift(
+        model=baseline_model,
+        baseline_X=X_val,
+        baseline_y=y_val,
+        monitoring_X=monitoring_features,
+        monitoring_y=monitoring_target,
+    )
+
+    persist_and_log_drift_outputs(
+        performance_report=performance_report,
+        monitoring_features=monitoring_features,
+        monitoring_target=monitoring_target,
+        pre_drift_df=pre_drift_df,
+        post_drift_df=post_drift_df,
+        experiment_name=EXPERIMENT_NAME,
+        drift_dir=REPORTS_DIR / "drift",
+    )
 
     ml_exp = MLExperiment(EXPERIMENT_NAME)
 

@@ -190,6 +190,7 @@ from xgboost import XGBRegressor
 from lightgbm import LGBMRegressor
 
 MODEL_MAP = {
+    'RandomForestRegressor': RandomForestRegressor(random_state=RANDOM_SEEDS.get_model_seed()),
     'MLPRegressor': MLPRegressor(random_state=RANDOM_SEEDS.get_model_seed(), max_iter=300),
     'LGBMRegressor': LGBMRegressor(random_state=RANDOM_SEEDS.get_model_seed(), verbose=-1),
     'ExtraTreesRegressor': ExtraTreesRegressor(random_state=RANDOM_SEEDS.get_model_seed()),
@@ -197,6 +198,10 @@ MODEL_MAP = {
 }
 
 PARAM_GRIDS = {
+    'RandomForestRegressor': {
+        'n_estimators': [200],
+        'max_depth': [None, 12],
+    },
     'MLPRegressor': {
         'activation': ['tanh'],  # Best from your results
         'hidden_layer_sizes': [(100,)],  # Best from your results
