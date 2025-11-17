@@ -9,14 +9,16 @@ from lazypredict.Supervised import LazyRegressor
 from sklearn.metrics import r2_score
 
 from src.modeling.data_processor import calculate_rmse, calculate_metrics
+from src.config import RANDOM_SEEDS
 
 class MLExperiment:
     """
     Orquesta los experimentos de Machine Learning, registrando todo con MLflow.
     """
     
-    def __init__(self, experiment_name: str, random_state: int = 117):
-        self.random_state = random_state
+    def __init__(self, experiment_name: str, random_state: int = None):
+        # Usar RandomSeedManager si no se proporciona una semilla específica
+        self.random_state = random_state if random_state is not None else RANDOM_SEEDS.get_model_seed()
         mlflow.set_experiment(experiment_name)
         
     def _log_plots(self, y_true, y_pred, model_name, subset, run_id):
@@ -188,10 +190,10 @@ from xgboost import XGBRegressor
 from lightgbm import LGBMRegressor
 
 MODEL_MAP = {
-    'MLPRegressor': MLPRegressor(random_state=117, max_iter=300),
-    'LGBMRegressor': LGBMRegressor(random_state=117, verbose=-1),
-    'ExtraTreesRegressor': ExtraTreesRegressor(random_state=117),
-    'Ridge': Ridge(random_state=117)  # Lighter model
+    'MLPRegressor': MLPRegressor(random_state=RANDOM_SEEDS.get_model_seed(), max_iter=300),
+    'LGBMRegressor': LGBMRegressor(random_state=RANDOM_SEEDS.get_model_seed(), verbose=-1),
+    'ExtraTreesRegressor': ExtraTreesRegressor(random_state=RANDOM_SEEDS.get_model_seed()),
+    'Ridge': Ridge(random_state=RANDOM_SEEDS.get_model_seed())  # Lighter model
 }
 
 PARAM_GRIDS = {

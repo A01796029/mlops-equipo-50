@@ -9,13 +9,12 @@ from datetime import datetime
 from src.modeling.data_processor import DataProcessor
 from src.modeling.pipeline import build_pipeline
 from src.modeling.ml_experiment import MLExperiment, MODEL_MAP, PARAM_GRIDS
-from src.config import INTERIM_DATA_DIR
+from src.config import INTERIM_DATA_DIR, RANDOM_SEEDS
 
 # --- Configuración General ---
 DEFAULT_DATA_PATH = INTERIM_DATA_DIR / "bike_sharing_cleaned.csv"
 # Add timestamp to experiment name for unique experiments each run
 EXPERIMENT_NAME = f"Bike_Sharing_MLOps_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-RANDOM_STATE = 42
 
 # Suprimir las advertencias para una salida más limpia
 warnings.filterwarnings("ignore")
@@ -35,8 +34,11 @@ def main(
     3. Optimización de hiperparámetros con GridSearchCV y registro en MLflow.
     """
     
+    # Configurar todas las semillas para reproducibilidad total
+    RANDOM_SEEDS.set_all_seeds()
+    
     print("--- 1. Preparando Datos ---")
-    data_proc = DataProcessor(str(input_path), random_state=RANDOM_STATE)
+    data_proc = DataProcessor(str(input_path))
     
     try:
         X_trainval, X_test, y_trainval, y_test, X_train, X_val, y_train, y_val = data_proc.load_and_split()
@@ -44,7 +46,7 @@ def main(
         print(f"No se pudo cargar y dividir los datos. Terminando. Error: {e}")
         return
 
-    ml_exp = MLExperiment(EXPERIMENT_NAME, random_state=RANDOM_STATE)
+    ml_exp = MLExperiment(EXPERIMENT_NAME)
 
     # --- 2. Selección de Modelos (usando modelos optimizados) ---
     if models == "auto":

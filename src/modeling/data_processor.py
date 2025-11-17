@@ -2,18 +2,20 @@
 ##Cambio ligero
 import pandas as pd
 from sklearn.model_selection import train_test_split
+from src.config import RANDOM_SEEDS
 
 class DataProcessor:
     """
     Clase para cargar, preprocesar y dividir el dataset.
     """
     
-    def __init__(self, file_path, target_col='cnt', test_size=0.2, val_size=0.10, random_state=42):
+    def __init__(self, file_path, target_col='cnt', test_size=0.2, val_size=0.10, random_state=None):
         self.file_path = file_path
         self.target_col = target_col
         self.test_size = test_size
         self.val_size = val_size
-        self.random_state = random_state
+        # Usar RandomSeedManager si no se proporciona una semilla específica
+        self.random_state = random_state if random_state is not None else RANDOM_SEEDS.get_data_split_seed()
         self.use_pipeline = True  # Indica si se usará el pipeline de preprocesamiento
 
     def _one_hot_encoder(self, data: pd.DataFrame, column: str) -> pd.DataFrame:
@@ -72,7 +74,7 @@ class DataProcessor:
         # 2. División Train + Validation -> Train y Validation (para LazyPredict)
         # Nota: Usaremos el 10% del 80% (trainval) para validación.
         X_train, X_val, y_train, y_val = train_test_split(
-            X_trainval, y_trainval, test_size=self.val_size, random_state=117
+            X_trainval, y_trainval, test_size=self.val_size, random_state=RANDOM_SEEDS.get_validation_split_seed()
         )
 
         return X_trainval, X_test, y_trainval, y_test, X_train, X_val, y_train, y_val
