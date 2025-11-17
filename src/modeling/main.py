@@ -4,6 +4,7 @@ import mlflow
 import warnings
 import typer
 from pathlib import Path
+from datetime import datetime
 
 from src.modeling.data_processor import DataProcessor
 from src.modeling.pipeline import build_pipeline
@@ -12,7 +13,8 @@ from src.config import INTERIM_DATA_DIR
 
 # --- Configuración General ---
 DEFAULT_DATA_PATH = INTERIM_DATA_DIR / "bike_sharing_cleaned.csv"
-EXPERIMENT_NAME = "Bike_Sharing_MLOps_Project"
+# Add timestamp to experiment name for unique experiments each run
+EXPERIMENT_NAME = f"Bike_Sharing_MLOps_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
 RANDOM_STATE = 42
 
 # Suprimir las advertencias para una salida más limpia
@@ -21,14 +23,10 @@ warnings.filterwarnings("ignore")
 # Crear la App de Typer
 app = typer.Typer()
 
-@app.callback(invoke_without_command=True)
+@app.command()
 def main(
-    ctx: typer.Context, # Argumento de contexto requerido para callback
-    input_path: Path = typer.Option(
-        DEFAULT_DATA_PATH, 
-        "--input-path", "-i",
-        help="Ruta al archivo CSV limpio (de 'interim')."
-    )
+    input_path: Path = DEFAULT_DATA_PATH,
+    models: str = "auto"
 ):
     """
     Ejecuta el pipeline de Machine Learning, incluyendo:
@@ -48,15 +46,20 @@ def main(
 
     ml_exp = MLExperiment(EXPERIMENT_NAME, random_state=RANDOM_STATE)
 
-    # --- 2. Comparación Inicial con LazyRegressor ---
-    print("\n--- 2. Ejecutando LazyRegressor para Screeening Inicial ---")
-    top_models = ml_exp.run_lazypredict(X_train, X_val, y_train, y_val, top_n=3)
+    # --- 2. Selección de Modelos (usando modelos optimizados) ---
+    if models == "auto":
+        print("\n--- 2. Usando modelos optimizados para entrenamiento rápido ---")
+        # Using best models from previous experiments + Ridge (lightweight)
+        models_to_train = ['MLPRegressor', 'LGBMRegressor', 'ExtraTreesRegressor', 'Ridge']
+        print(f"Modelos a entrenar: {models_to_train}")
+        print("(Skipping LazyRegressor para reducir tiempo de entrenamiento)")
+    else:
+        print("\n--- 2. Usando modelos especificados ---")
+        models_to_train = [m.strip() for m in models.split(',')]
+        print(f"Modelos a entrenar: {models_to_train}")
 
     # --- 3. Optimización de Modelos ---
     print("\n--- 3. Optimizando Modelos Seleccionados con GridSearchCV ---")
-
-    models_to_train = ['XGBRegressor', 'RandomForestRegressor'] 
-    print(f"Modelos a entrenar: {models_to_train}")
 
     for model_name in models_to_train:
         if model_name in MODEL_MAP:

@@ -49,6 +49,15 @@ class DataProcessor:
         
         try:
             df = pd.read_csv(self.file_path)
+            
+            # Clean target variable: convert to numeric and drop invalid rows
+            df[self.target_col] = pd.to_numeric(df[self.target_col], errors='coerce')
+            initial_rows = len(df)
+            df = df.dropna(subset=[self.target_col])
+            dropped_rows = initial_rows - len(df)
+            if dropped_rows > 0:
+                print(f"  → Eliminadas {dropped_rows} filas con valores inválidos en '{self.target_col}'")
+            
             X = self._prepare_data(df)
             y = df[self.target_col]
         except Exception as e:
