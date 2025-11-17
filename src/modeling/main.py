@@ -1,14 +1,26 @@
 # src/modeling/main.py
 
+from datetime import datetime
+from pathlib import Path
+
 import mlflow
 import warnings
 import typer
-from pathlib import Path
 
 from src.modeling.data_processor import DataProcessor
-from src.modeling.pipeline import build_pipeline
+from src.modeling.pipeline import build_pipeline, infer_feature_types
 from src.modeling.ml_experiment import MLExperiment, MODEL_MAP, PARAM_GRIDS
-from src.config import INTERIM_DATA_DIR
+from src.modeling.data_drift import (
+    DRIFT_THRESHOLDS,
+    detect_drift,
+    evaluate_performance_drift,
+    generate_monitoring_dataset,
+    drift_results_as_dataframe,
+    log_drift_summary,
+    plot_metric_comparison,
+    save_drift_report,
+)
+from src.config import INTERIM_DATA_DIR, REPORTS_DIR
 
 # --- Configuración General ---
 DEFAULT_DATA_PATH = INTERIM_DATA_DIR / "bike_sharing_cleaned.csv"
@@ -46,11 +58,84 @@ def main(
         print(f"No se pudo cargar y dividir los datos. Terminando. Error: {e}")
         return
 
+    print("\n--- 1b. Analizando Data Drift entre Train/Validation y Test ---")
+    num_cols, cat_cols = infer_feature_types(X_trainval)
+    pre_drift_results = detect_drift(X_trainval, X_test, num_cols, cat_cols)
+    log_drift_summary(pre_drift_results)
+    pre_drift_df = drift_results_as_dataframe(pre_drift_results)
+
+    print("\n--- 1c. Simulando data drift y evaluando impacto en performance ---")
+    monitoring_features = generate_monitoring_dataset(X_val, random_state=RANDOM_STATE)
+    monitoring_target = y_val.copy()
+
+    print("\n--- 1d. Verificando drift entre Validación y lote simulado ---")
+    post_drift_results = detect_drift(X_val, monitoring_features, num_cols, cat_cols)
+    log_drift_summary(post_drift_results)
+    post_drift_df = drift_results_as_dataframe(post_drift_results)
+
+    baseline_model = build_pipeline(MODEL_MAP['RandomForestRegressor'], X_trainval)
+    baseline_model.fit(X_trainval, y_trainval)
+
+    performance_report = evaluate_performance_drift(
+        model=baseline_model,
+        baseline_X=X_val,
+        baseline_y=y_val,
+        monitoring_X=monitoring_features,
+        monitoring_y=monitoring_target,
+    )
+
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    drift_dir = REPORTS_DIR / "drift"
+    drift_dir.mkdir(parents=True, exist_ok=True)
+    monitoring_path = drift_dir / f"monitoring_batch_{timestamp}.csv"
+    monitoring_features.assign(cnt=monitoring_target.values).to_csv(monitoring_path, index=False)
+
+    summary_path = drift_dir / f"drift_report_{timestamp}.json"
+    figure_path = drift_dir / f"drift_metrics_{timestamp}.png"
+    feature_drift_pre_path = drift_dir / f"feature_drift_pre_{timestamp}.csv"
+    feature_drift_post_path = drift_dir / f"feature_drift_post_{timestamp}.csv"
+    if not pre_drift_df.empty:
+        pre_drift_df.to_csv(feature_drift_pre_path, index=False)
+    else:
+        feature_drift_pre_path = None
+
+    if not post_drift_df.empty:
+        post_drift_df.to_csv(feature_drift_post_path, index=False)
+    else:
+        feature_drift_post_path = None
+    save_drift_report(performance_report, summary_path)
+    plot_metric_comparison(performance_report, figure_path)
+
+    print(
+        f"Alert triggered: {performance_report.alert_triggered}. Acción sugerida: {performance_report.recommended_action}"
+    )
+
+    # Registrar resultados del monitoreo en MLflow
+    mlflow.set_experiment(EXPERIMENT_NAME)
+    with mlflow.start_run(run_name="DataDriftMonitoring"):
+        mlflow.set_tag("stage", "Data Drift Monitoring")
+        mlflow.log_params({
+            "alert_triggered": str(performance_report.alert_triggered),
+            "recommended_action": performance_report.recommended_action,
+        })
+        mlflow.log_params({f"threshold_{k}": v for k, v in DRIFT_THRESHOLDS.items()})
+
+        mlflow.log_metrics({f"baseline_{k}": v for k, v in performance_report.baseline_metrics.items()})
+        mlflow.log_metrics({f"monitoring_{k}": v for k, v in performance_report.monitoring_metrics.items()})
+        mlflow.log_metrics({f"delta_{k}": v for k, v in performance_report.deltas.items()})
+
+        mlflow.log_artifact(summary_path, artifact_path="drift")
+        mlflow.log_artifact(figure_path, artifact_path="drift")
+        mlflow.log_artifact(monitoring_path, artifact_path="drift")
+        for path in (feature_drift_pre_path, feature_drift_post_path):
+            if path:
+                mlflow.log_artifact(path, artifact_path="drift")
+
     ml_exp = MLExperiment(EXPERIMENT_NAME, random_state=RANDOM_STATE)
 
-    # --- 2. Comparación Inicial con LazyRegressor ---
-    print("\n--- 2. Ejecutando LazyRegressor para Screeening Inicial ---")
-    top_models = ml_exp.run_lazypredict(X_train, X_val, y_train, y_val, top_n=3)
+    # # --- 2. Comparación Inicial con LazyRegressor ---
+    # print("\n--- 2. Ejecutando LazyRegressor para Screeening Inicial ---")
+    # top_models = ml_exp.run_lazypredict(X_train, X_val, y_train, y_val, top_n=3)
 
     # --- 3. Optimización de Modelos ---
     print("\n--- 3. Optimizando Modelos Seleccionados con GridSearchCV ---")
