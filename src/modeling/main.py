@@ -1,9 +1,7 @@
 # src/modeling/main.py
 
-from datetime import datetime
 from pathlib import Path
 
-import mlflow
 import warnings
 import typer
 
@@ -11,14 +9,12 @@ from src.modeling.data_processor import DataProcessor
 from src.modeling.pipeline import build_pipeline, infer_feature_types
 from src.modeling.ml_experiment import MLExperiment, MODEL_MAP, PARAM_GRIDS
 from src.modeling.data_drift import (
-    DRIFT_THRESHOLDS,
     detect_drift,
     evaluate_performance_drift,
     generate_monitoring_dataset,
     drift_results_as_dataframe,
     log_drift_summary,
-    plot_metric_comparison,
-    save_drift_report,
+    persist_and_log_drift_outputs,
 )
 from src.config import INTERIM_DATA_DIR, REPORTS_DIR
 
@@ -84,52 +80,15 @@ def main(
         monitoring_y=monitoring_target,
     )
 
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    drift_dir = REPORTS_DIR / "drift"
-    drift_dir.mkdir(parents=True, exist_ok=True)
-    monitoring_path = drift_dir / f"monitoring_batch_{timestamp}.csv"
-    monitoring_features.assign(cnt=monitoring_target.values).to_csv(monitoring_path, index=False)
-
-    summary_path = drift_dir / f"drift_report_{timestamp}.json"
-    figure_path = drift_dir / f"drift_metrics_{timestamp}.png"
-    feature_drift_pre_path = drift_dir / f"feature_drift_pre_{timestamp}.csv"
-    feature_drift_post_path = drift_dir / f"feature_drift_post_{timestamp}.csv"
-    if not pre_drift_df.empty:
-        pre_drift_df.to_csv(feature_drift_pre_path, index=False)
-    else:
-        feature_drift_pre_path = None
-
-    if not post_drift_df.empty:
-        post_drift_df.to_csv(feature_drift_post_path, index=False)
-    else:
-        feature_drift_post_path = None
-    save_drift_report(performance_report, summary_path)
-    plot_metric_comparison(performance_report, figure_path)
-
-    print(
-        f"Alert triggered: {performance_report.alert_triggered}. Acción sugerida: {performance_report.recommended_action}"
+    persist_and_log_drift_outputs(
+        performance_report=performance_report,
+        monitoring_features=monitoring_features,
+        monitoring_target=monitoring_target,
+        pre_drift_df=pre_drift_df,
+        post_drift_df=post_drift_df,
+        experiment_name=EXPERIMENT_NAME,
+        drift_dir=REPORTS_DIR / "drift",
     )
-
-    # Registrar resultados del monitoreo en MLflow
-    mlflow.set_experiment(EXPERIMENT_NAME)
-    with mlflow.start_run(run_name="DataDriftMonitoring"):
-        mlflow.set_tag("stage", "Data Drift Monitoring")
-        mlflow.log_params({
-            "alert_triggered": str(performance_report.alert_triggered),
-            "recommended_action": performance_report.recommended_action,
-        })
-        mlflow.log_params({f"threshold_{k}": v for k, v in DRIFT_THRESHOLDS.items()})
-
-        mlflow.log_metrics({f"baseline_{k}": v for k, v in performance_report.baseline_metrics.items()})
-        mlflow.log_metrics({f"monitoring_{k}": v for k, v in performance_report.monitoring_metrics.items()})
-        mlflow.log_metrics({f"delta_{k}": v for k, v in performance_report.deltas.items()})
-
-        mlflow.log_artifact(summary_path, artifact_path="drift")
-        mlflow.log_artifact(figure_path, artifact_path="drift")
-        mlflow.log_artifact(monitoring_path, artifact_path="drift")
-        for path in (feature_drift_pre_path, feature_drift_post_path):
-            if path:
-                mlflow.log_artifact(path, artifact_path="drift")
 
     ml_exp = MLExperiment(EXPERIMENT_NAME, random_state=RANDOM_STATE)
 
