@@ -9,14 +9,16 @@ from lazypredict.Supervised import LazyRegressor
 from sklearn.metrics import r2_score
 
 from src.modeling.data_processor import calculate_rmse, calculate_metrics
+from src.config import RANDOM_SEEDS
 
 class MLExperiment:
     """
     Orquesta los experimentos de Machine Learning, registrando todo con MLflow.
     """
     
-    def __init__(self, experiment_name: str, random_state: int = 117):
-        self.random_state = random_state
+    def __init__(self, experiment_name: str, random_state: int = None):
+        # Usar RandomSeedManager si no se proporciona una semilla específica
+        self.random_state = random_state if random_state is not None else RANDOM_SEEDS.get_model_seed()
         mlflow.set_experiment(experiment_name)
         
     def _log_plots(self, y_true, y_pred, model_name, subset, run_id):
@@ -48,29 +50,63 @@ class MLExperiment:
             run_id = run.info.run_id
             mlflow.set_tag("stage", "Initial Screening")
             
-            reg = LazyRegressor(ignore_warnings=True, random_state=self.random_state, verbose=0)
-            print(f"Iniciando LazyRegressor. Evaluando en set de Validación (size={X_val.shape})...")
-            
-            # Entrenar en X_train y evaluar en X_val
-            models_df, _ = reg.fit(X_train, X_val, y_train, y_val)
-            top_models_df = models_df.head(top_n).reset_index()
-            
-            # 1. Registrar Parámetros y Resultados
-            mlflow.log_param("dataset_split", "Train (90%) vs. Validation (10%)")
-            
-            # Registrar métricas individuales para los top_n modelos
-            for index, row in top_models_df.iterrows():
-                model_name = row['Model']
-                mlflow.log_metric(f"R2_VAL_{model_name}", row['R-Squared'])
-                mlflow.log_metric(f"RMSE_VAL_{model_name}", row['RMSE'])
-                mlflow.log_param(f"TOP_{index+1}_MODEL", model_name)
-            
-            # 2. Registrar el DataFrame de resultados como artefacto
-            top_models_df.to_csv("lazy_regressor_top10.csv", index=False)
-            mlflow.log_artifact("lazy_regressor_top10.csv", "results_data", run_id=run_id)
-            
-            print(f"LazyRegressor Run ID: {run_id}")
-            return top_models_df['Model'].tolist()[:top_n]
+            try:
+                # Convert to numpy arrays and ensure no mixed types
+                import numpy as np
+                
+                # Handle mixed type columns and convert to numeric
+                for col in X_train.columns:
+                    if X_train[col].dtype == 'object' or X_train[col].dtype.name == 'category':
+                        # Convert to string first, then to category codes
+                        X_train[col] = pd.Categorical(X_train[col].astype(str)).codes
+                        X_val[col] = pd.Categorical(X_val[col].astype(str)).codes
+                
+                # Ensure y is numeric
+                y_train = pd.to_numeric(y_train, errors='coerce')
+                y_val = pd.to_numeric(y_val, errors='coerce')
+                
+                # Drop any remaining NaN values
+                train_mask = ~(X_train.isna().any(axis=1) | y_train.isna())
+                val_mask = ~(X_val.isna().any(axis=1) | y_val.isna())
+                
+                X_train_clean = X_train[train_mask].copy()
+                y_train_clean = y_train[train_mask].copy()
+                X_val_clean = X_val[val_mask].copy()
+                y_val_clean = y_val[val_mask].copy()
+                
+                print(f"  → Datos limpios: Train={X_train_clean.shape}, Val={X_val_clean.shape}")
+                
+                reg = LazyRegressor(ignore_warnings=True, random_state=self.random_state, verbose=0)
+                print(f"Iniciando LazyRegressor. Evaluando en set de Validación...")
+                
+                # Entrenar en X_train y evaluar en X_val
+                models_df, _ = reg.fit(X_train_clean, X_val_clean, y_train_clean, y_val_clean)
+                top_models_df = models_df.head(top_n).reset_index()
+                
+                # 1. Registrar Parámetros y Resultados
+                mlflow.log_param("dataset_split", "Train (90%) vs. Validation (10%)")
+                
+                # Registrar métricas individuales para los top_n modelos
+                for index, row in top_models_df.iterrows():
+                    model_name = row['Model']
+                    mlflow.log_metric(f"R2_VAL_{model_name}", row['R-Squared'])
+                    mlflow.log_metric(f"RMSE_VAL_{model_name}", row['RMSE'])
+                    mlflow.log_param(f"TOP_{index+1}_MODEL", model_name)
+                
+                # 2. Registrar el DataFrame de resultados como artefacto
+                top_models_df.to_csv("lazy_regressor_top10.csv", index=False)
+                mlflow.log_artifact("lazy_regressor_top10.csv", "results_data", run_id=run_id)
+                
+                print(f"LazyRegressor Run ID: {run_id}")
+                print(f"Top {top_n} modelos encontrados: {top_models_df['Model'].tolist()}")
+                
+                return top_models_df['Model'].tolist()[:top_n]
+                
+            except Exception as e:
+                print(f"Error en LazyRegressor: {e}")
+                mlflow.log_param("status", f"FAILED: {str(e)}")
+                # Return empty list if LazyRegressor fails
+                return []
 
     def run_grid_search(self, model_name: str, model_instance, param_grid: dict, X_trainval, y_trainval, X_test, y_test):
         """
@@ -92,7 +128,7 @@ class MLExperiment:
                 estimator=model_instance, 
                 param_grid=param_grid, 
                 scoring='neg_mean_squared_error',
-                cv=3, 
+                cv=2,  # Reduced from 3 to 2 for faster training
                 verbose=1, 
                 n_jobs=-1
             )
@@ -148,29 +184,38 @@ class MLExperiment:
 
 from sklearn.linear_model import LinearRegression, Ridge, HuberRegressor, ElasticNetCV
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor, ExtraTreesRegressor
+from sklearn.neural_network import MLPRegressor
 from sklearn.svm import SVR
-from xgboost import XGBRegressor 
+from xgboost import XGBRegressor
+from lightgbm import LGBMRegressor
 
 MODEL_MAP = {
-    'RandomForestRegressor': RandomForestRegressor(random_state=117),
-    'SVR': SVR(),
-    # Nota: XGBoost necesita el parámetro enable_categorical=True si hay columnas 'category'
-    'XGBRegressor': XGBRegressor(random_state=117, eval_metric='rmse', enable_categorical=True) 
+    'RandomForestRegressor': RandomForestRegressor(random_state=RANDOM_SEEDS.get_model_seed()),
+    'MLPRegressor': MLPRegressor(random_state=RANDOM_SEEDS.get_model_seed(), max_iter=300),
+    'LGBMRegressor': LGBMRegressor(random_state=RANDOM_SEEDS.get_model_seed(), verbose=-1),
+    'ExtraTreesRegressor': ExtraTreesRegressor(random_state=RANDOM_SEEDS.get_model_seed()),
+    'Ridge': Ridge(random_state=RANDOM_SEEDS.get_model_seed())  # Lighter model
 }
 
 PARAM_GRIDS = {
     'RandomForestRegressor': {
-        'n_estimators': [50, 100],
-        'max_depth': [5, 10]
+        'n_estimators': [200],
+        'max_depth': [None, 12],
     },
-    'SVR': {
-        'kernel': ['rbf'],
-        'C': [0.1, 1, 10],
-        'gamma': ['scale']
+    'MLPRegressor': {
+        'activation': ['tanh'],  # Best from your results
+        'hidden_layer_sizes': [(100,)],  # Best from your results
     },
-    'XGBRegressor': {
-        'n_estimators': [50, 100],
-        'learning_rate': [0.01, 0.1],
-        'max_depth': [3, 5]
+    'LGBMRegressor': {
+        'learning_rate': [0.1],  # Best from your results
+        'max_depth': [-1],  # Best from your results (unlimited)
+        'n_estimators': [100],  # Best from your results
+    },
+    'ExtraTreesRegressor': {
+        'n_estimators': [100],  # From your results
+        'max_depth': [10],  # From your results
+    },
+    'Ridge': {
+        'alpha': [0.1, 1.0, 10.0],  # Simple linear model, very fast
     }
 }
