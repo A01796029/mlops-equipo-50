@@ -1,0 +1,26 @@
+services:
+  mlops-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - MLFLOW_TRACKING_URI=${MLFLOW_TRACKING_URI}
+    volumes:
+      - ./data:/data
+      - ./models:/models
+    ports:
+      - "8080:8080"
+    container_name: mlops-equipo-50
+
+  mlops-api:
+    build:
+      context: .
+      dockerfile: ./src/api/Dockerfile
+    depends_on:
+      mlops-equipo-50:
+        condition: service_completed_successfully
+    environment:
+      - MLFLOW_TRACKING_URI=${MLFLOW_TRACKING_URI}
+    ports:
+      - "8000:8000"
+    container_name: mlops-api
