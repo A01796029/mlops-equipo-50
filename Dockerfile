@@ -1,14 +1,19 @@
 FROM python:3.10-slim
 
-WORKDIR /src/modeling
+WORKDIR /app
 
-COPY ./requirements.txt /src/modeling/requirements.txt
+# Instalar dependencias del sistema necesarias para lightgbm y otras librerías científicas
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgomp1 \
+    git \
+    && rm -rf /var/lib/apt/lists/*
 
-COPY ./data/interim/bike_sharing_cleaned.csv /data/interim/bike_sharing_cleaned.csv
+COPY ./requirements.txt /app/requirements.txt
 
-RUN pip install --no-cache-dir --upgrade -r /src/requirements.txt
+RUN pip3 install --no-cache-dir --upgrade -r /app/requirements.txt
 
-COPY ./src/modeling /src/modeling
-COPY ./src/config.py /src/config.py
+COPY ./data/interim/bike_sharing_cleaned.csv /app/data/interim/bike_sharing_cleaned.csv
 
-CMD ["python", "src/modeling/main.py"]
+COPY ./src /app/src
+
+CMD ["python", "-m", "src.modeling.main"]
