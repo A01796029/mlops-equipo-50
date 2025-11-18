@@ -177,6 +177,14 @@ class MLExperiment:
             print(f"Optimización y evaluación de {model_name} registrada. R2 Test: {test_metrics['r2']:.4f}")
             print(f"Run ID: {run_id}")
 
+            model_uri = f"runs:/{run_id}/best_model_gs"
+
+            # Opción A: Registrar directamente con log_model
+            mlflow.sklearn.log_model(
+                best_estimator, 
+                "best_model_gs",
+                registered_model_name="BikeSharing_BestModel"  # ← Agregar esta línea
+            )
 
 # ----------------------------------------------------------------------
 # Modelos y Grids para la Optimización
