@@ -12,6 +12,13 @@ def infer_feature_types(X: pd.DataFrame) -> Tuple[List[str], List[str]]:
     num_cols = X.select_dtypes(include=["number"]).columns.tolist()
     return num_cols, cat_cols
 
+def _get_ohe() -> OneHotEncoder:
+    try:
+        return OneHotEncoder(handle_unknown="ignore", sparse_output=False)
+    except TypeError:
+        return OneHotEncoder(handle_unknown="ignore", sparse=False)
+
+
 def build_preprocessor(X: pd.DataFrame) -> ColumnTransformer:
     num_cols, cat_cols = infer_feature_types(X)
     numeric = Pipeline(steps=[
@@ -20,7 +27,7 @@ def build_preprocessor(X: pd.DataFrame) -> ColumnTransformer:
     ])
     categorical = Pipeline(steps=[
         ("imputer", SimpleImputer(strategy="most_frequent")),
-        ("ohe", OneHotEncoder(handle_unknown="ignore", sparse_output=False))
+        ("ohe", _get_ohe())
     ])
     return ColumnTransformer(
         transformers=[

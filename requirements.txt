@@ -10,7 +10,7 @@ scikit-learn==1.5.0
 lazypredict==0.2.16
 
 # ML & experiment tracking
-mlflow==2.15.1
+mlflow==3.1.4
 evidently==0.4.33
 sdv==1.12.0          # <- versión estable compatible con DVC
 deepchecks==0.17.3
